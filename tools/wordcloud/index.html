@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文字雲輸入</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Noto Sans TC', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-blue-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+    <h1 class="text-2xl font-bold text-center text-blue-700 mb-6">💬 文字雲輸入</h1>
+
+    <div class="space-y-4">
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-600 mb-1">組別</label>
+          <input id="class-id" type="text" placeholder="例：第一組"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-600 mb-1">場次</label>
+          <input id="session" type="text" placeholder="例：第一節"
+            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mb-1">你的短語（最多 20 字）</label>
+        <input id="word" type="text" placeholder="輸入短語，按 Enter 送出"
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 text-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+          maxlength="20" autocomplete="off">
+      </div>
+
+      <button id="submit-btn" onclick="submitWord()"
+        class="w-full bg-blue-600 text-white text-xl font-bold py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition">
+        送出
+      </button>
+
+      <p id="status" class="text-center text-green-600 font-bold text-lg min-h-[1.75rem]"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 從 URL 參數預填班級和場次（老師分享連結用）
+    const params = new URLSearchParams(location.search);
+    if (params.get('class')) document.getElementById('class-id').value = params.get('class');
+    if (params.get('session')) document.getElementById('session').value = params.get('session');
+
+    // 自動 focus 到短語欄位
+    const wordInput = document.getElementById('word');
+    if (params.get('class') && params.get('session')) wordInput.focus();
+
+    window.submitWord = async function () {
+      const classId = document.getElementById('class-id').value.trim();
+      const session = document.getElementById('session').value.trim();
+      const word = wordInput.value.trim();
+
+      if (!classId || !session || !word) {
+        alert('請填寫班級、場次和短語');
+        return;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = '送出中…';
+
+      try {
+        await addDoc(collection(db, 'wordcloud_words'), {
+          class_id: classId,
+          session: session,
+          word: word,
+          created_at: serverTimestamp()
+        });
+
+        wordInput.value = '';
+        document.getElementById('status').textContent = '✅ 已送出！';
+        wordInput.focus();
+        setTimeout(() => document.getElementById('status').textContent = '', 2000);
+      } catch (e) {
+        alert('送出失敗：' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '送出';
+      }
+    };
+
+    wordInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.submitWord();
+    });
+  </script>
+</body>
+</html>

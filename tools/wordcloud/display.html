@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>即時文字雲</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans TC', sans-serif; margin: 0; overflow: hidden; background: #fff; }
+    #canvas { display: block; margin-top: 48px; }
+  </style>
+</head>
+<body>
+  <!-- 控制列 -->
+  <div class="fixed top-0 left-0 right-0 bg-white/95 backdrop-blur border-b z-10 px-4 py-2 flex items-center gap-2 flex-wrap">
+    <span class="font-bold text-blue-700 text-sm mr-1">☁️ 文字雲</span>
+    <input id="class-id" type="text" placeholder="組別" class="border rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+    <input id="session" type="text" placeholder="場次" class="border rounded px-2 py-1 w-24 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400">
+    <button onclick="loadCloud()" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition">載入</button>
+    <button onclick="clearWords()" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition">清空</button>
+    <span id="count" class="text-gray-400 text-xs ml-auto"></span>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, query, where, onSnapshot, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { firebaseConfig } from './config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const canvas = document.getElementById('canvas');
+    const COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+
+    let unsubscribe = null;
+    let currentClassId = '';
+    let currentSession = '';
+    let cachedList = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight - 48;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', () => { resizeCanvas(); render(cachedList); });
+
+    function render(wordList) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (!wordList.length) {
+        ctx.font = 'bold 22px Noto Sans TC';
+        ctx.fillStyle = '#9CA3AF';
+        ctx.textAlign = 'center';
+        ctx.fillText('尚無資料，等待學生輸入中…', canvas.width / 2, canvas.height / 2);
+        return;
+      }
+
+      WordCloud(canvas, {
+        list: wordList,
+        gridSize: 18,
+        weightFactor: count => Math.max(18, count * 14),
+        fontFamily: 'Noto Sans TC, sans-serif',
+        fontWeight: 'bold',
+        color: () => COLORS[Math.floor(Math.random() * COLORS.length)],
+        rotateRatio: 0,
+        backgroundColor: '#ffffff',
+        wait: 8
+      });
+    }
+
+    window.loadCloud = function () {
+      const classId = document.getElementById('class-id').value.trim();
+      const session = document.getElementById('session').value.trim();
+      if (!classId || !session) { alert('請填寫班級和場次'); return; }
+
+      currentClassId = classId;
+      currentSession = session;
+
+      if (unsubscribe) unsubscribe();
+
+      const q = query(
+        collection(db, 'wordcloud_words'),
+        where('class_id', '==', classId),
+        where('session', '==', session)
+      );
+
+      unsubscribe = onSnapshot(q, snapshot => {
+        const freq = {};
+        snapshot.forEach(doc => {
+          const w = doc.data().word;
+          if (w) freq[w] = (freq[w] || 0) + 1;
+        });
+        cachedList = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+        document.getElementById('count').textContent = `${snapshot.size} 筆`;
+        render(cachedList);
+      });
+    };
+
+    window.clearWords = async function () {
+      if (!currentClassId || !currentSession) { alert('請先載入班級和場次'); return; }
+      if (!confirm(`確定清空「${currentClassId} ${currentSession}」的所有文字雲資料？`)) return;
+
+      const q = query(
+        collection(db, 'wordcloud_words'),
+        where('class_id', '==', currentClassId),
+        where('session', '==', currentSession)
+      );
+      const snapshot = await getDocs(q);
+      await Promise.all(snapshot.docs.map(d => deleteDoc(d.ref)));
+    };
+
+    // URL 參數自動載入（老師分享 display.html?class=501&session=第一節）
+    const params = new URLSearchParams(location.search);
+    if (params.get('class') && params.get('session')) {
+      document.getElementById('class-id').value = params.get('class');
+      document.getElementById('session').value = params.get('session');
+      window.loadCloud();
+    }
+  </script>
+</body>
+</html>
