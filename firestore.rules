@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 你的第一個集合：任何人可讀寫
+    // 之後新增工具時在這裡加更多 match 區塊
+    match /wordcloud_words/{document} {
+      allow read, write: if true;
+    }
+
+    // 其他集合預設禁止存取
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
