@@ -50,7 +50,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 從 URL 參數預填班級和場次（老師分享連結用）
+    // 從 URL 參數預填組別和場次（老師分享連結用）
     const params = new URLSearchParams(location.search);
     if (params.get('class')) document.getElementById('class-id').value = params.get('class');
     if (params.get('session')) document.getElementById('session').value = params.get('session');
@@ -65,7 +65,7 @@
       const word = wordInput.value.trim();
 
       if (!classId || !session || !word) {
-        alert('請填寫班級、場次和短語');
+        alert('請填寫組別、場次和短語');
         return;
       }
 

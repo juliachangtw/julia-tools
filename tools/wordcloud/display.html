@@ -76,7 +76,7 @@
     window.loadCloud = function () {
       const classId = document.getElementById('class-id').value.trim();
       const session = document.getElementById('session').value.trim();
-      if (!classId || !session) { alert('請填寫班級和場次'); return; }
+      if (!classId || !session) { alert('請填寫組別和場次'); return; }
 
       currentClassId = classId;
       currentSession = session;
@@ -102,7 +102,7 @@
     };
 
     window.clearWords = async function () {
-      if (!currentClassId || !currentSession) { alert('請先載入班級和場次'); return; }
+      if (!currentClassId || !currentSession) { alert('請先載入組別和場次'); return; }
       if (!confirm(`確定清空「${currentClassId} ${currentSession}」的所有文字雲資料？`)) return;
 
       const q = query(
