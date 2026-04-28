@@ -12,7 +12,7 @@
 
 ## 工作桌 + 三個家
 
-- 📋 GDrive 工作桌：`D:\juliagd\00 julia知識庫\000 vibecoding\julia-tools\`（自動跨電腦同步）
+- 💻 本機專案路徑：`D:\Projects\julia-tools\`（已移出 Google Drive，改由 Git 管理）
 - 🐙 GitHub repo：`juliachangtw/julia-tools`（公開，網頁的家）
 - 📘 Obsidian 駕駛艙：`OB_julia/julia-tools/工作筆記.md`（想法的家）
 - 🔥 Firebase 專案：`julia-tools`（資料的家）
