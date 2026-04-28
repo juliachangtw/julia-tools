@@ -11,6 +11,9 @@ credentials.*
 # Claude Code 本地設定（含 permissions、可能記錄 token，絕不上雲）
 .claude/
 
+# Python
+.venv/
+
 # Node.js
 node_modules/
 package-lock.json
